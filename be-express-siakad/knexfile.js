@@ -4,17 +4,16 @@ config();
 
 const knexConfig = {
   development: {
-    client: process.env.DB_CLIENT || "mysql2", // Disarankan menggunakan mysql2 untuk TiDB
+    client: process.env.DB_CLIENT || "mysql2",
     connection: {
-      host: process.env.DB_HOST, // gateway01.eu-central-1.prod.aws.tidbcloud.com
-      port: Number(process.env.DB_PORT) || 4000, // Port default TiDB adalah 4000
-      user: process.env.DB_USERNAME, // 3b5qLv3hxzSxKMv.root
-      password: process.env.DB_PASSWORD, // GJ4AIp2JVyscRzgR
-      database: process.env.DB_NAME || "test", //
-      // WAJIB: TiDB Cloud menggunakan koneksi publik yang membutuhkan SSL
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT) || 4000,
+      user: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME || "test",
       ssl: {
         minVersion: 'TLSv1.2',
-        rejectUnauthorized: false // Set false agar lebih mudah tanpa file .pem fisik
+        rejectUnauthorized: false
       }
     },
     migrations: {
@@ -23,6 +22,7 @@ const knexConfig = {
       loadExtensions: [".js"],
     },
   },
+  
   production: {
     client: process.env.DB_CLIENT || "mysql2",
     connection: {
@@ -33,8 +33,19 @@ const knexConfig = {
       database: process.env.DB_NAME,
       ssl: {
         minVersion: 'TLSv1.2',
-        rejectUnauthorized: true, // Di production sebaiknya true dengan CA cert
+        rejectUnauthorized: false // Diubah ke false agar tidak perlu file sertifikat fisik di Vercel
       }
+    },
+    // Pool sangat disarankan untuk aplikasi yang dideploy ke cloud/serverless
+    pool: {
+      min: 0,
+      max: 10,
+      acquireTimeoutMillis: 30000,
+      createTimeoutMillis: 30000,
+      idleTimeoutMillis: 30000,
+      reapIntervalMillis: 1000,
+      createRetryIntervalMillis: 100,
+      propagateCreateError: false
     },
     migrations: {
       directory: "./src/migrations",
