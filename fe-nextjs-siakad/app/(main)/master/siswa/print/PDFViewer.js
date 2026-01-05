@@ -1,5 +1,4 @@
 "use client";
-"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "primereact/button";
@@ -10,7 +9,6 @@ export default function PDFViewer({ pdfUrl, fileName, paperSize = "A4" }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Jika URL PDF berubah, reset status loading dan error
   useEffect(() => {
     if (pdfUrl) {
       setLoading(true);
@@ -18,18 +16,15 @@ export default function PDFViewer({ pdfUrl, fileName, paperSize = "A4" }) {
     }
   }, [pdfUrl]);
 
-  // Saat iframe selesai memuat
   const handleIframeLoad = () => {
     setLoading(false);
   };
 
-  // Jika gagal memuat PDF
   const handleIframeError = () => {
     setLoading(false);
     setError("Gagal memuat PDF");
   };
 
-  // Tombol Download
   const handleDownload = () => {
     try {
       const link = document.createElement("a");
@@ -43,14 +38,14 @@ export default function PDFViewer({ pdfUrl, fileName, paperSize = "A4" }) {
     }
   };
 
-  // Tombol Print
   const handlePrint = () => {
     if (iframeRef.current) {
+      // Pastikan fokus ke iframe sebelum print
+      iframeRef.current.contentWindow.focus();
       iframeRef.current.contentWindow.print();
     }
   };
 
-  // Jika belum ada file PDF
   if (!pdfUrl) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -63,7 +58,6 @@ export default function PDFViewer({ pdfUrl, fileName, paperSize = "A4" }) {
 
   return (
     <div className="flex flex-col h-full rounded-md overflow-hidden border border-gray-200 shadow-sm">
-      {/* Toolbar Header */}
       <div className="flex justify-between items-center p-3 bg-gray-100 border-b">
         <div className="flex items-center gap-2">
           <i className="pi pi-file-pdf text-red-500 text-xl"></i>
@@ -87,9 +81,7 @@ export default function PDFViewer({ pdfUrl, fileName, paperSize = "A4" }) {
         </div>
       </div>
 
-      {/* PDF Viewer Area */}
       <div className="flex-1 relative bg-gray-200">
-        {/* Spinner Loading */}
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 z-10">
             <ProgressSpinner
@@ -99,7 +91,6 @@ export default function PDFViewer({ pdfUrl, fileName, paperSize = "A4" }) {
           </div>
         )}
 
-        {/* Error Display */}
         {error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-white z-10">
             <i className="pi pi-exclamation-triangle text-red-500 text-4xl mb-3"></i>
@@ -107,10 +98,9 @@ export default function PDFViewer({ pdfUrl, fileName, paperSize = "A4" }) {
           </div>
         )}
 
-        {/* PDF Frame */}
         <iframe
           ref={iframeRef}
-          src={pdfUrl}
+          src={`${pdfUrl}#toolbar=0`}
           className="w-full h-full border-0"
           title="PDF Preview"
           onLoad={handleIframeLoad}
