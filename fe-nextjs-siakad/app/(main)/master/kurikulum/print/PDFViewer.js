@@ -1,173 +1,156 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect } from 'react'
-import { Document, Page, pdfjs } from 'react-pdf'
-import { Button } from 'primereact/button'
+import { useEffect, useRef, useState } from "react";
+import { Button } from "primereact/button";
+import { ProgressSpinner } from "primereact/progressspinner";
 
-import 'react-pdf/dist/Page/TextLayer.css'
-import 'react-pdf/dist/Page/AnnotationLayer.css'
+export default function PDFViewer({ pdfUrl, fileName, paperSize = "A4" }) {
+  const iframeRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url,
-).toString()
+  useEffect(() => {
+    if (pdfUrl) {
+      setLoading(true);
+      setError(null);
+    }
+  }, [pdfUrl]);
 
-function PDFViewer({ pdfUrl, paperSize, fileName }) {
-    const [numPages, setNumPages] = useState(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageWidth, setPageWidth] = useState(0);
-    const [pageHeight, setPageHeight] = useState(0);
-    const [scale, setScale] = useState(1);
+  const handleIframeLoad = () => {
+    setLoading(false);
+  };
 
-    const handleFirstPage = () => {
-        if (currentPage !== 1) {
-            setCurrentPage(1);
-        }
-    };
+  const handleIframeError = () => {
+    setLoading(false);
+    setError("Gagal memuat PDF");
+  };
 
-    const handlePrevPage = () => {
-        if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
-        }
-    };
+  const handleDownload = async () => {
+    try {
+      setLoading(true);
+      
+      // Metode 1: Download dengan fetch untuk file lokal/same-origin
+      const response = await fetch(pdfUrl);
+      
+      if (!response.ok) {
+        throw new Error('Gagal mengunduh file');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName || "laporan.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Cleanup
+      setTimeout(() => window.URL.revokeObjectURL(url), 100);
+      setLoading(false);
+    } catch (err) {
+      console.error('Download error:', err);
+      
+      // Fallback: Buka di tab baru (untuk CORS atau external URL)
+      const link = document.createElement("a");
+      link.href = pdfUrl;
+      link.download = fileName || "laporan.pdf";
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setLoading(false);
+    }
+  };
 
-    const handleNextPage = () => {
-        if (currentPage < numPages) {
-            setCurrentPage(currentPage + 1);
-        }
-    };
-
-    const handleLastPage = () => {
-        if (currentPage !== numPages) {
-            setCurrentPage(numPages);
-        }
-    };
-
-    const handleZoomIn = () => {
-        if (scale < 2.0) {
-            setScale(scale + 0.1);
-        }
-    };
-
-    const handleZoomOut = () => {
-        if (scale > 0.5) {
-            setScale(scale - 0.1);
-        }
-    };
-
-    const handleDownloadPDF = () => {
-        const downloadLink = document.createElement('a');
-        downloadLink.href = pdfUrl;
-        downloadLink.download = fileName + '.pdf';
-        downloadLink.click();
-    };
-
-    const handlePrint = () => {
-        if (!pdfUrl) return;
-
-        if (pdfUrl.startsWith('data:application/pdf')) {
-            const base64Data = pdfUrl.split(',')[1];
-            const byteCharacters = atob(base64Data);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) {
-                byteNumbers[i] = byteCharacters.charCodeAt(i);
-            }
-            const byteArray = new Uint8Array(byteNumbers);
-            const blob = new Blob([byteArray], { type: 'application/pdf' });
-
-            const blobUrl = URL.createObjectURL(blob);
-            window.open(blobUrl, '_blank');
-        } else {
-            window.open(pdfUrl, '_blank');
-        }
-    };
-
-    useEffect(() => {
-        const loadPdf = async () => {
-            try {
-                const loadingTask = pdfjs.getDocument({ url: pdfUrl });
-                const pdf = await loadingTask.promise;
-                const pages = pdf.numPages;
-                setNumPages(pages);
-
-
-                const mmToPixel = 3.7795275591;
-                let paperWidthInMm, paperHeightInMm;
-
-                if (paperSize === 'A4') {
-                    paperWidthInMm = 210;
-                    paperHeightInMm = 297;
-                } else if (paperSize === 'Letter') {
-                    paperWidthInMm = 216;
-                    paperHeightInMm = 279;
-                } else if (paperSize === 'Legal') {
-                    paperWidthInMm = 216;
-                    paperHeightInMm = 356;
-                } else {
-                    paperWidthInMm = 216;
-                    paperHeightInMm = 279;
-                }
-
-                setPageWidth(paperWidthInMm * mmToPixel);
-                setPageHeight(paperHeightInMm * mmToPixel);
-            } catch (error) {
-            }
+  const handlePrint = () => {
+    try {
+      // Coba print dari iframe (untuk same-origin PDF)
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.print();
+      } else {
+        throw new Error('Cannot access iframe');
+      }
+    } catch (err) {
+      // Jika iframe tidak bisa diakses (CORS), buka di tab baru
+      console.warn("CORS restriction detected. Opening PDF in new window for printing...");
+      
+      const printWindow = window.open(pdfUrl, "_blank", "width=800,height=600");
+      
+      if (printWindow) {
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+          }, 250);
         };
+      } else {
+        alert("Popup diblokir! Mohon izinkan popup untuk print.");
+      }
+    }
+  };
 
-        if (pdfUrl) {
-            loadPdf();
-        }
-    }, [pdfUrl, paperSize]);
-
+  if (!pdfUrl) {
     return (
-        <div>
-            {pdfUrl && numPages !== null && (
-                <div>
-                    <div
-                        style={{
-                            backgroundColor: '#f0f0f0',
-                            padding: '10px',
-                            borderRadius: '5px',
-                            boxShadow: '0px 0px 5px rgba(0, 0, 0, 0.3)',
-                            position: 'sticky',
-                            top: '0',
-                            zIndex: '1000',
-                            width: '100%'
-                        }}
-                    >
-                        <Button label="" icon="pi pi-angle-double-left" style={{ margin: '5px' }} onClick={handleFirstPage} disabled={currentPage === 1} className="p-button-secondary pdf-toolbar-button" />
-                        <Button label="" icon="pi pi-angle-left" style={{ margin: '5px' }} onClick={handlePrevPage} disabled={currentPage === 1} className="p-button-secondary pdf-toolbar-button" />
-                        <Button label="" icon="pi pi-search-plus" style={{ margin: '5px' }} onClick={handleZoomIn} disabled={scale >= 2.0} className="p-button-info pdf-toolbar-button" />
-                        <Button label="" icon="pi pi-search-minus" style={{ margin: '5px' }} onClick={handleZoomOut} disabled={scale <= 0.5} className="p-button-info pdf-toolbar-button" />
-                        <Button label="" icon="pi pi-angle-right" style={{ margin: '5px' }} onClick={handleNextPage} disabled={currentPage === numPages} className="p-button-secondary pdf-toolbar-button" />
-                        <Button label="" icon="pi pi-angle-double-right" style={{ margin: '5px' }} onClick={handleLastPage} disabled={currentPage === numPages} className="p-button-secondary pdf-toolbar-button" />
-                        <Button label="" icon="pi pi-download" style={{ margin: '5px' }} onClick={handleDownloadPDF} className="p-button-success pdf-toolbar-button" />
-                        <Button label="" icon="pi pi-print" style={{ margin: '5px' }} onClick={handlePrint} className="p-button-success pdf-toolbar-button" />
-                    </div>
-                    <div style={{ overflow: 'auto', height: '59vh', display: 'flex', paddingTop: '10%', justifyContent: 'center', alignItems: 'center' }}>
-                        <div className="pdf-canvas" style={{ background: 'lightgray', marginTop: '640px', padding: '10px' }}>
-                            <div className="pdf-frame" style={{ border: 'none', padding: '0px', maxWidth: '100%', maxHeight: '100%' }}>
-                                <Document file={pdfUrl}>
-                                    <Page pageNumber={currentPage} width={pageWidth} height={pageHeight} scale={scale} />
-                                </Document>
-                            </div>
-                        </div>
-                    </div>
-                    <div
-                        className="pdf-page-info"
-                        style={{
-                            textAlign: 'center',
-                            marginTop: '10px',
-                            color: 'gray',
-                            fontSize: '12px'
-                        }}
-                    >
-                        Page {currentPage} of {numPages}
-                    </div>
-                </div>
-            )}
-        </div>
+      <div className="flex items-center justify-center h-full">
+        <p className="text-gray-500">Tidak ada PDF untuk ditampilkan</p>
+      </div>
     );
-}
+  }
 
-export default PDFViewer;
+  return (
+    <div className="flex flex-col h-full">
+      {/* Toolbar */}
+      <div className="flex justify-between items-center p-3 bg-gray-100 border-b">
+        <div className="flex items-center gap-2">
+          <i className="pi pi-file-pdf text-red-500 text-xl"></i>
+          <span className="font-semibold">{fileName || "Laporan.pdf"}</span>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            label="Download"
+            icon="pi pi-download"
+            className="p-button-sm p-button-success"
+            onClick={handleDownload}
+          />
+          <Button
+            label="Print"
+            icon="pi pi-print"
+            className="p-button-sm p-button-warning"
+            onClick={handlePrint}
+          />
+        </div>
+      </div>
+
+      {/* PDF Viewer */}
+      <div className="flex-1 relative bg-gray-200">
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
+            <ProgressSpinner
+              style={{ width: "50px", height: "50px" }}
+              strokeWidth="4"
+            />
+          </div>
+        )}
+
+        {error && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
+            <div className="text-center">
+              <i className="pi pi-exclamation-triangle text-red-500 text-4xl mb-3"></i>
+              <p className="text-gray-700">{error}</p>
+            </div>
+          </div>
+        )}
+
+        <iframe
+          ref={iframeRef}
+          src={pdfUrl}
+          className="w-full h-full border-0"
+          title="PDF Preview"
+          onLoad={handleIframeLoad}
+          onError={handleIframeError}
+        />
+      </div>
+    </div>
+  );
+}
