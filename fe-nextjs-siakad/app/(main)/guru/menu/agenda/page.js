@@ -456,13 +456,14 @@ export default function AgendaMengajarPage() {
             rowsPerPageOptions={[10, 20, 50]} 
           />
         ) : (
-          <div className="text-center p-5 surface-100 border-round">
-            <i className="pi pi-book text-6xl text-400 mb-3"></i>
-            <p className="text-500 text-xl">Belum ada agenda pembelajaran</p>
-            <p className="text-400">Klik tombol "Tambah Agenda" untuk membuat agenda baru</p>
-          </div>
-        )}
-      </div>
+        <div className="text-center p-5 surface-100 border-round">
+                    <i className="pi pi-book text-6xl text-400 mb-3"></i>
+                    <p className="text-500 text-xl">Belum ada agenda pembelajaran</p>
+                    {/* Perbaikan di bawah ini: menggunakan &quot; */}
+                    <p className="text-400">Klik tombol &quot;Tambah Agenda&quot; untuk membuat agenda baru</p>
+                  </div>
+                )}
+              </div>
 
       <FormAgendaMengajar
         isOpen={dialogMode !== null}
