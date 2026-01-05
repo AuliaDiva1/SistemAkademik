@@ -21,16 +21,17 @@ import { generateToken } from "../utils/jwt.js";
 import { datetime, status } from "../utils/general.js";
 
 /**
- * HELPER: Mengatur Path Foto agar aman di Vercel
+ * HELPER: Menyesuaikan path foto untuk Vercel vs Lokal
  */
-const getFilePath = (file, subfolder) => {
+const getFotoPath = (file, folderName) => {
   if (!file) return null;
-  // Jika di Vercel, kita hanya simpan nama filenya saja karena folder /tmp bersifat sementara
-  if (process.env.NODE_ENV === "production") {
-    return file.filename; 
+  // Di Vercel (Production), kita tidak bisa akses folder ./uploads secara persisten
+  // Kita hanya simpan nama filenya saja yang ada di /tmp
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
+    return file.filename;
   }
-  // Jika di Lokal, simpan path lengkapnya
-  return `/uploads/${subfolder}/${file.filename}`;
+  // Di Lokal, simpan path lengkap untuk akses static file
+  return `/uploads/${folderName}/${file.filename}`;
 };
 
 /**
@@ -44,7 +45,7 @@ export const registerGuru = async (req, res) => {
     const validation = registerGuruSchema.safeParse(body);
     if (!validation.success) {
       return res.status(400).json({
-        status: status.BAD_REQUEST,
+        status: status.BAD_REQUEST || "01",
         message: "Validasi gagal",
         datetime: datetime(),
         errors: validation.error.errors.map((err) => ({
@@ -55,8 +56,7 @@ export const registerGuru = async (req, res) => {
     }
 
     const parsed = validation.data;
-    // PERBAIKAN: Gunakan helper path
-    const fotoPath = getFilePath(file, "foto_guru");
+    const fotoPath = getFotoPath(file, "foto_guru");
 
     const { user, guru } = await createGuru(
       {
@@ -87,7 +87,7 @@ export const registerGuru = async (req, res) => {
     );
 
     return res.status(201).json({
-      status: status.SUKSES,
+      status: status.SUKSES || "00",
       message: "Registrasi guru berhasil",
       datetime: datetime(),
       user: { id: user.id, name: user.name, email: user.email, role: user.role },
@@ -96,7 +96,7 @@ export const registerGuru = async (req, res) => {
   } catch (err) {
     console.error("Error registerGuru:", err);
     return res.status(500).json({
-      status: status.GAGAL,
+      status: status.GAGAL || "01",
       message: `Terjadi kesalahan server: ${err.message}`,
       datetime: datetime(),
     });
@@ -131,30 +131,22 @@ export const registerSiswa = async (req, res) => {
     }
 
     const data = validation.data;
-    // PERBAIKAN: Gunakan helper path
-    const fotoFile = getFilePath(req.file, "foto_siswa");
+    const fotoFile = getFotoPath(req.file, "foto_siswa");
 
-    // Cek duplikasi
     if (await checkEmailExists(data.email)) {
       return res.status(400).json({ status: status.BAD_REQUEST, message: "Email sudah terdaftar", datetime: datetime() });
     }
-    if (await checkNisExists(data.nis)) {
-      return res.status(400).json({ status: status.BAD_REQUEST, message: "NIS sudah terdaftar", datetime: datetime() });
-    }
-    if (await checkNisnExists(data.nisn)) {
-      return res.status(400).json({ status: status.BAD_REQUEST, message: "NISN sudah terdaftar", datetime: datetime() });
-    }
 
-    // Mapping orang tua (Logic tetap sama)
-    let ortuData = {};
+    // Mapping orang tua/wali logic
+    let ortuFields = {};
     if (Array.isArray(data.orang_tua)) {
-      data.orang_tua.forEach(ortu => {
-        const prefix = ortu.jenis.toUpperCase();
-        ortuData[`NAMA_${prefix}`] = ortu.nama;
-        ortuData[`PEKERJAAN_${prefix}`] = ortu.pekerjaan || null;
-        ortuData[`PENDIDIKAN_${prefix}`] = ortu.pendidikan || null;
-        ortuData[`ALAMAT_${prefix}`] = ortu.alamat || null;
-        ortuData[`NO_TELP_${prefix}`] = ortu.no_hp || null;
+      data.orang_tua.forEach((ortu) => {
+        const type = ortu.jenis.toUpperCase(); // AYAH, IBU, WALI
+        ortuFields[`NAMA_${type}`] = ortu.nama;
+        ortuFields[`PEKERJAAN_${type}`] = ortu.pekerjaan || null;
+        ortuFields[`PENDIDIKAN_${type}`] = ortu.pendidikan || null;
+        ortuFields[`ALAMAT_${type}`] = ortu.alamat || null;
+        ortuFields[`NO_TELP_${type}`] = ortu.no_hp || null;
       });
     }
 
@@ -176,7 +168,7 @@ export const registerSiswa = async (req, res) => {
         BERAT: data.berat || null,
         KEBUTUHAN_KHUSUS: data.kebutuhan_khusus || null,
         FOTO: fotoFile,
-        ...ortuData
+        ...ortuFields
       },
       { name: data.nama, email: data.email, password: data.password }
     );
@@ -195,7 +187,7 @@ export const registerSiswa = async (req, res) => {
 };
 
 /**
- * REGISTER (UMUM)
+ * REGISTER UMUM
  */
 export const register = async (req, res) => {
   try {
@@ -234,7 +226,28 @@ export const register = async (req, res) => {
 };
 
 /**
- * LOGIN (Logic tetap sama, pastikan utils/hash.js sudah pakai bcryptjs)
+ * GET PROFILE (PENTING: Sudah di-export)
+ */
+export const getProfile = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ status: "01", message: "Token tidak valid", datetime: datetime() });
+    }
+
+    const user = await getUserProfileById(userId);
+    if (!user) {
+      return res.status(404).json({ status: "01", message: "User tidak ditemukan", datetime: datetime() });
+    }
+
+    return res.status(200).json({ status: "00", message: "Berhasil mengambil profil", datetime: datetime(), user });
+  } catch (error) {
+    return res.status(500).json({ status: "01", message: error.message, datetime: datetime() });
+  }
+};
+
+/**
+ * LOGIN
  */
 export const login = async (req, res) => {
   try {
@@ -267,8 +280,27 @@ export const login = async (req, res) => {
       user: { id: existingUser.id, name: existingUser.name, email: existingUser.email, role: existingUser.role },
     });
   } catch (error) {
-    return res.status(500).json({ status: status.GAGAL, message: `Terjadi kesalahan server: ${error.message}`, datetime: datetime() });
+    return res.status(500).json({ status: status.GAGAL, message: error.message, datetime: datetime() });
   }
 };
 
-// ... (Sisanya getProfile dan logout tetap sama)
+/**
+ * LOGOUT
+ */
+export const logout = async (req, res) => {
+  try {
+    const token = req.headers["authorization"]?.split(" ")[1];
+    const userId = req.user?.userId;
+
+    if (!token || !userId) {
+      return res.status(401).json({ status: status.TIDAK_ADA_TOKEN, message: "Token tidak ditemukan", datetime: datetime() });
+    }
+
+    await blacklistToken(token, new Date(req.user.exp * 1000));
+    await addLoginHistory({ userId, action: "LOGOUT", ip: req.ip, userAgent: req.headers["user-agent"] || "unknown" });
+
+    return res.status(200).json({ status: status.SUKSES, message: "Logout berhasil", datetime: datetime() });
+  } catch (error) {
+    return res.status(500).json({ status: status.GAGAL, message: error.message, datetime: datetime() });
+  }
+};
