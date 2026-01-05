@@ -59,11 +59,15 @@ const app = express();
 
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
-const allowedOrigins = ["http://localhost:3000"];
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://siakad-delta.vercel.app" // Domain frontend kamu
+];
 
 app.use(
   cors({
     origin: (origin, callback) => {
+      // Logic: Jika tidak ada origin (seperti Postman) atau origin terdaftar di whitelist
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -72,10 +76,10 @@ app.use(
     },
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization", "X-Timestamp", "X-Signature"],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Tambahkan OPTIONS
     optionSuccessStatus: 200,
   })
-);
+); 
 
 app.use(logger("dev"));
 app.use(express.json());
