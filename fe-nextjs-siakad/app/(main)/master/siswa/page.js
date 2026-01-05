@@ -10,7 +10,7 @@ import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import ToastNotifier from "../../../components/ToastNotifier";
 import HeaderBar from "../../../components/headerbar";
 import FilterTanggal from "../../../components/filterTanggal";
-import TabelSiswa from "./components/TabelSiswa";
+import TabelSiswa from "./components/tabelSiswa";
 import FormDialogSiswa from "./components/FormDialogSiswa";
 import AdjustPrintMarginLaporan from "./print/AdjustPrintMarginLaporan";
 
