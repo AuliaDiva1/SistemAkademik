@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import logger from "morgan";
 import path from "path";
+import fs from "fs";
 import { setResponseHeader } from "./middleware/set-headers.js";
 
 import authRoutes from "./routes/authRoutes.js";
@@ -55,6 +56,7 @@ import bukuIndukRoutes from "./routes/bukuIndukRoutes.js";
 
 const app = express();
 
+
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 const allowedOrigins = ["http://localhost:3000"];
@@ -82,7 +84,23 @@ app.use(express.urlencoded({ extended: false }));
 app.get("/", [setResponseHeader], (req, res) => {
   return res.status(200).json(`Welcome to the server! ${new Date().toLocaleString()}`);
 });
+app.get("/uploads/foto_siswa/:filename", (req, res) => {
+  const { filename } = req.params;
 
+  // 1. Cek di folder lokal (untuk saat kamu jalankan di laptop)
+  const localPath = path.join(process.cwd(), "uploads", "foto_siswa", filename);
+  
+  // 2. Cek di folder /tmp (untuk saat running di Vercel)
+  const vpcPath = path.join("/tmp", filename);
+
+  if (fs.existsSync(localPath)) {
+    return res.sendFile(localPath);
+  } else if (fs.existsSync(vpcPath)) {
+    return res.sendFile(vpcPath);
+  } else {
+    return res.status(404).send("File tidak ditemukan di server maupun /tmp");
+  }
+});
 app.use("/api/auth", authRoutes);
 app.use("/api/siswa", siswaRoutes);
 app.use("/api/kelas", kelasRoutes);
