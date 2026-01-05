@@ -1,23 +1,29 @@
 import { Router } from "express";
-import * as AuthController from "../controllers/authController.js"; // pastikan path benar
-import { verifyToken } from "../middleware/jwt.js"; // middleware JWT untuk proteksi route
-import upload from "../middleware/upload-foto.js"; // middleware untuk upload foto
+// Ubah cara import ini:
+import { 
+  login, 
+  register, 
+  registerSiswa, 
+  registerGuru, 
+  logout, 
+  getProfile 
+} from "../controllers/authController.js";
+
+import { verifyToken } from "../middleware/jwt.js";
+import upload from "../middleware/upload-foto.js";
 
 const router = Router();
 
-// LOGIN
-router.post("/login", AuthController.login);
+// Gunakan fungsi langsung tanpa awalan AuthController.
+router.post("/login", login);
+router.post("/register", register);
 
-// REGISTER (hanya SUPER_ADMIN bisa menambahkan user, proteksi bisa di middleware)
-router.post("/register", AuthController.register);
+// PERHATIKAN: Nama field di upload.single() harus sesuai dengan yang dikirim Frontend
+// Jika di frontend namanya "foto_siswa", maka ganti "foto" jadi "foto_siswa"
+router.post("/register-siswa", upload.single("foto"), registerSiswa);
+router.post("/register-guru", upload.single("foto"), registerGuru);
 
-router.post("/register-siswa", upload.single("foto"), AuthController.registerSiswa);
-router.post("/register-guru", upload.single("foto"), AuthController.registerGuru);
-
-// LOGOUT
-router.post("/logout", verifyToken, AuthController.logout);
-
-// GET PROFILE
-router.get("/profile", verifyToken, AuthController.getProfile);
+router.post("/logout", verifyToken, logout);
+router.get("/profile", verifyToken, getProfile);
 
 export default router;
