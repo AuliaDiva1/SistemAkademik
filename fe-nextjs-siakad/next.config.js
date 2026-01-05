@@ -2,26 +2,21 @@
 const nextConfig = {
   reactStrictMode: false,
 
-  // 1. Izinkan akses gambar dari domain backend kamu
+  // Izinkan gambar dari Backend Vercel/Localhost
   images: {
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**.vercel.app', // Mengizinkan semua domain vercel
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-      },
+      { protocol: "https", hostname: "**.vercel.app" },
+      { protocol: "http", hostname: "localhost" },
     ],
   },
 
+  // SOLUSI UTAMA ERROR import.meta
   experimental: {
-    // 2. Membantu mengatasi error "import.meta" pada library modern
-    esmExternals: 'loose', 
+    esmExternals: "loose",
   },
 
   webpack: (config, { isServer }) => {
+    // Memperbaiki masalah library PDF di sisi client
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -32,16 +27,20 @@ const nextConfig = {
       };
     }
 
-    // Mengatasi error Webpack pada file .node atau binary jika ada
+    // Mengabaikan parsing pada file binary/worker library PDF
     config.module.rules.push({
-      test: /\.node$/,
-      use: 'raw-loader',
+      test: /\.m?js$/,
+      type: "javascript/auto",
+      resolve: {
+        fullySpecified: false,
+      },
     });
 
     return config;
   },
 
-  transpilePackages: ['jspdf', 'jspdf-autotable', 'pdfjs-dist'], // Tambahkan pdfjs-dist jika kamu menggunakannya
+  // Transpile package yang sering bermasalah di Next.js
+  transpilePackages: ["jspdf", "jspdf-autotable", "pdfjs-dist"],
 };
 
 module.exports = nextConfig;
