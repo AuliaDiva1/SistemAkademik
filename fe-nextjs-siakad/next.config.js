@@ -1,9 +1,27 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: false, // ✅ Tambahkan ini untuk disable strict mode
-  
+  reactStrictMode: false,
+
+  // 1. Izinkan akses gambar dari domain backend kamu
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.vercel.app', // Mengizinkan semua domain vercel
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
+    ],
+  },
+
+  experimental: {
+    // 2. Membantu mengatasi error "import.meta" pada library modern
+    esmExternals: 'loose', 
+  },
+
   webpack: (config, { isServer }) => {
-    // Konfigurasi untuk handle PDF libraries
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -14,17 +32,16 @@ const nextConfig = {
       };
     }
 
-    // Optimalkan caching
-    config.cache = {
-      ...config.cache,
-      maxMemoryGenerations: 1,
-    };
+    // Mengatasi error Webpack pada file .node atau binary jika ada
+    config.module.rules.push({
+      test: /\.node$/,
+      use: 'raw-loader',
+    });
 
     return config;
   },
-  
-  // Transpile dependencies yang diperlukan
-  transpilePackages: ['jspdf', 'jspdf-autotable'],
+
+  transpilePackages: ['jspdf', 'jspdf-autotable', 'pdfjs-dist'], // Tambahkan pdfjs-dist jika kamu menggunakannya
 };
 
 module.exports = nextConfig;
