@@ -12,7 +12,7 @@ import { Image } from "primereact/image";
 import ToastNotifier from "../../../../components/ToastNotifier";
 import HeaderBar from "../../../../components/headerbar";
 import CustomDataTable from "../../../../components/DataTable";
-import FilterTanggal from "../../../../components/FilterTanggal";
+import FilterTanggal from "../../../../components/filterTanggal";
 
 // Forms & Prints
 import FormAbsensiGuru from "./components/FormAbsensiGuru";
