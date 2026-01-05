@@ -9,7 +9,6 @@ import dynamic from "next/dynamic";
 import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import ToastNotifier from "../../../components/ToastNotifier";
 import HeaderBar from "../../../components/headerbar";
-import FilterTanggal from "@/components/filterTanggal";
 import TabelSiswa from "./components/tabelSiswa";
 import FormDialogSiswa from "./components/FormDialogSiswa";
 import AdjustPrintMarginLaporan from "./print/AdjustPrintMarginLaporan";
@@ -37,9 +36,6 @@ const SiswaPage = () => {
 
   const [selectedSiswa, setSelectedSiswa] = useState(null);
 
-  // Filter tanggal
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
 
   // PDF Preview
   const [adjustDialog, setAdjustDialog] = useState(false);
