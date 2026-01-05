@@ -36,13 +36,22 @@ const SiswaDetailDialog = ({ visible, onHide, siswa }) => {
         .finally(() => setLoading(false));
     }
   }, [siswa, visible, API_TRANSAKSI]);
+const fotoUrl = (() => {
+  if (!siswa?.FOTO) return null;
 
-  const fotoUrl =
-    siswa?.FOTO
-      ? siswa.FOTO.startsWith("http")
-        ? siswa.FOTO
-        : `${API_URL.replace("/api", "")}${siswa.FOTO}`
-      : null;
+  // Jika sudah link lengkap (Cloudinary/http), langsung pakai
+  if (siswa.FOTO.startsWith("http")) return siswa.FOTO;
+
+  // Bersihkan host (hapus /api di ujung)
+  const host = API_URL ? API_URL.replace(/\/api$/, "").replace(/\/$/, "") : "";
+
+  // Ambil nama filenya saja dari database 
+  // (Jika di DB: "/uploads/foto_siswa/gambar.jpg" -> kita ambil "gambar.jpg")
+  const namaFile = siswa.FOTO.split('/').pop(); 
+
+  // Panggil route jembatan yang kita buat tadi
+  return `${host}/uploads/foto_siswa/${namaFile}`;
+})();
 
   const InfoItem = ({ label, value }) => (
     <div className="mb-3">
@@ -68,51 +77,32 @@ const SiswaDetailDialog = ({ visible, onHide, siswa }) => {
     >
       {siswa ? (
         <div className="pb-2">
-          {/* ====== HEADER CARD - FOTO & INFO UTAMA ====== */}
           <Card className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-none shadow-3">
             <div className="grid align-items-center">
               <div className="col-12 md:col-4 text-center">
-                {fotoUrl ? (
+                <div className="relative inline-block">
                   <img
-                    src={fotoUrl}
+                    src={fotoUrl || "https://www.primefaces.org/wp-content/uploads/2020/05/placeholder.png"}
                     alt="Foto Siswa"
                     className="border-circle shadow-4"
+                    onError={(e) => {
+                      // Jika /tmp tidak bisa diakses, tampilkan placeholder
+                      e.target.src = "https://www.primefaces.org/wp-content/uploads/2020/05/placeholder.png";
+                    }}
                     style={{
                       width: "160px",
                       height: "160px",
                       objectFit: "cover",
-                      margin: "0 auto",
                       border: "4px solid white",
                     }}
                   />
-                ) : (
-                  <div
-                    className="border-circle bg-gray-200 flex align-items-center justify-content-center shadow-2"
-                    style={{
-                      width: "160px",
-                      height: "160px",
-                      margin: "0 auto",
-                    }}
-                  >
-                    <i className="pi pi-user text-6xl text-gray-400"></i>
-                  </div>
-                )}
+                </div>
               </div>
               <div className="col-12 md:col-8">
                 <h2 className="mt-0 mb-2 text-primary">{siswa.NAMA}</h2>
                 <div className="flex flex-wrap gap-2 mb-3">
-                  <Tag
-                    severity={siswa.STATUS === "AKTIF" ? "success" : "warning"}
-                    value={siswa.STATUS}
-                    icon="pi pi-check-circle"
-                  />
-                  <Tag
-                    severity="info"
-                    value={siswa.GENDER === "L" ? "Laki-laki" : "Perempuan"}
-                    icon={
-                      siswa.GENDER === "L" ? "pi pi-mars" : "pi pi-venus"
-                    }
-                  />
+                  <Tag severity={siswa.STATUS === "AKTIF" ? "success" : "warning"} value={siswa.STATUS} />
+                  <Tag severity="info" value={siswa.GENDER === "L" ? "Laki-laki" : "Perempuan"} />
                 </div>
                 <div className="grid">
                   <div className="col-6">
