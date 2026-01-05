@@ -4,168 +4,87 @@ import React, { useState, useEffect } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { Button } from 'primereact/button'
 
+// CSS wajib untuk react-pdf
 import 'react-pdf/dist/Page/TextLayer.css'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url,
-).toString()
+// SOLUSI BUILD VERCEL: Gunakan CDN untuk worker agar tidak diproses Webpack
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
 
 function PDFViewer({ pdfUrl, paperSize, fileName }) {
     const [numPages, setNumPages] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageWidth, setPageWidth] = useState(0);
-    const [pageHeight, setPageHeight] = useState(0);
     const [scale, setScale] = useState(1);
 
-    const handleFirstPage = () => {
-        if (currentPage !== 1) {
-            setCurrentPage(1);
-        }
-    };
+    // Hitung ukuran kertas berdasarkan props
+    useEffect(() => {
+        const mmToPixel = 3.7795275591;
+        let widthInMm = 210; // Default A4
 
-    const handlePrevPage = () => {
-        if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
-        }
-    };
+        if (paperSize === 'Letter') widthInMm = 216;
+        else if (paperSize === 'Legal') widthInMm = 216;
+        
+        setPageWidth(widthInMm * mmToPixel);
+    }, [paperSize]);
 
-    const handleNextPage = () => {
-        if (currentPage < numPages) {
-            setCurrentPage(currentPage + 1);
-        }
-    };
-
-    const handleLastPage = () => {
-        if (currentPage !== numPages) {
-            setCurrentPage(numPages);
-        }
-    };
-
-    const handleZoomIn = () => {
-        if (scale < 2.0) {
-            setScale(scale + 0.1);
-        }
-    };
-
-    const handleZoomOut = () => {
-        if (scale > 0.5) {
-            setScale(scale - 0.1);
-        }
-    };
+    function onDocumentLoadSuccess({ numPages }) {
+        setNumPages(numPages);
+        setCurrentPage(1);
+    }
 
     const handleDownloadPDF = () => {
-        const downloadLink = document.createElement('a');
-        downloadLink.href = pdfUrl;
-        downloadLink.download = fileName + '.pdf';
-        downloadLink.click();
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        link.download = `${fileName || 'laporan'}.pdf`;
+        link.click();
     };
 
     const handlePrint = () => {
-        if (!pdfUrl) return;
-
-        if (pdfUrl.startsWith('data:application/pdf')) {
-            const base64Data = pdfUrl.split(',')[1];
-            const byteCharacters = atob(base64Data);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) {
-                byteNumbers[i] = byteCharacters.charCodeAt(i);
-            }
-            const byteArray = new Uint8Array(byteNumbers);
-            const blob = new Blob([byteArray], { type: 'application/pdf' });
-
-            const blobUrl = URL.createObjectURL(blob);
-            window.open(blobUrl, '_blank');
-        } else {
-            window.open(pdfUrl, '_blank');
-        }
+        const printWindow = window.open(pdfUrl, '_blank');
+        if (printWindow) printWindow.print();
     };
 
-    useEffect(() => {
-        const loadPdf = async () => {
-            try {
-                const loadingTask = pdfjs.getDocument({ url: pdfUrl });
-                const pdf = await loadingTask.promise;
-                const pages = pdf.numPages;
-                setNumPages(pages);
-
-
-                const mmToPixel = 3.7795275591;
-                let paperWidthInMm, paperHeightInMm;
-
-                if (paperSize === 'A4') {
-                    paperWidthInMm = 210;
-                    paperHeightInMm = 297;
-                } else if (paperSize === 'Letter') {
-                    paperWidthInMm = 216;
-                    paperHeightInMm = 279;
-                } else if (paperSize === 'Legal') {
-                    paperWidthInMm = 216;
-                    paperHeightInMm = 356;
-                } else {
-                    paperWidthInMm = 216;
-                    paperHeightInMm = 279;
-                }
-
-                setPageWidth(paperWidthInMm * mmToPixel);
-                setPageHeight(paperHeightInMm * mmToPixel);
-            } catch (error) {
-            }
-        };
-
-        if (pdfUrl) {
-            loadPdf();
-        }
-    }, [pdfUrl, paperSize]);
-
     return (
-        <div>
-            {pdfUrl && numPages !== null && (
-                <div>
-                    <div
-                        style={{
-                            backgroundColor: '#f0f0f0',
-                            padding: '10px',
-                            borderRadius: '5px',
-                            boxShadow: '0px 0px 5px rgba(0, 0, 0, 0.3)',
-                            position: 'sticky',
-                            top: '0',
-                            zIndex: '1000',
-                            width: '100%'
-                        }}
+        <div className="flex flex-column align-items-center w-full bg-gray-100 border-round">
+            {/* Toolbar */}
+            <div className="flex flex-wrap justify-content-center gap-2 p-2 sticky top-0 z-5 bg-white shadow-2 w-full border-round-top">
+                <Button icon="pi pi-angle-double-left" onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="p-button-text" />
+                <Button icon="pi pi-angle-left" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="p-button-text" />
+                
+                <span className="flex align-items-center font-bold px-2">
+                    {currentPage} / {numPages || 0}
+                </span>
+
+                <Button icon="pi pi-angle-right" onClick={() => setCurrentPage(prev => Math.min(prev + 1, numPages))} disabled={currentPage === numPages} className="p-button-text" />
+                <Button icon="pi pi-angle-double-right" onClick={() => setCurrentPage(numPages)} disabled={currentPage === numPages} className="p-button-text" />
+                
+                <div className="border-left-1 border-gray-300 mx-2"></div>
+
+                <Button icon="pi pi-search-plus" onClick={() => setScale(s => Math.min(s + 0.1, 2.0))} disabled={scale >= 2.0} className="p-button-text" />
+                <Button icon="pi pi-search-minus" onClick={() => setScale(s => Math.max(s - 0.1, 0.5))} disabled={scale <= 0.5} className="p-button-text" />
+                <Button icon="pi pi-download" onClick={handleDownloadPDF} className="p-button-text p-button-success" />
+                <Button icon="pi pi-print" onClick={handlePrint} className="p-button-text p-button-warning" />
+            </div>
+
+            {/* Area Preview */}
+            <div className="w-full overflow-auto flex justify-content-center p-4" style={{ height: '70vh', backgroundColor: '#525659' }}>
+                <div className="shadow-8 bg-white">
+                    <Document 
+                        file={pdfUrl} 
+                        onLoadSuccess={onDocumentLoadSuccess}
+                        loading={<ProgressSpinner />}
                     >
-                        <Button label="" icon="pi pi-angle-double-left" style={{ margin: '5px' }} onClick={handleFirstPage} disabled={currentPage === 1} className="p-button-secondary pdf-toolbar-button" />
-                        <Button label="" icon="pi pi-angle-left" style={{ margin: '5px' }} onClick={handlePrevPage} disabled={currentPage === 1} className="p-button-secondary pdf-toolbar-button" />
-                        <Button label="" icon="pi pi-search-plus" style={{ margin: '5px' }} onClick={handleZoomIn} disabled={scale >= 2.0} className="p-button-info pdf-toolbar-button" />
-                        <Button label="" icon="pi pi-search-minus" style={{ margin: '5px' }} onClick={handleZoomOut} disabled={scale <= 0.5} className="p-button-info pdf-toolbar-button" />
-                        <Button label="" icon="pi pi-angle-right" style={{ margin: '5px' }} onClick={handleNextPage} disabled={currentPage === numPages} className="p-button-secondary pdf-toolbar-button" />
-                        <Button label="" icon="pi pi-angle-double-right" style={{ margin: '5px' }} onClick={handleLastPage} disabled={currentPage === numPages} className="p-button-secondary pdf-toolbar-button" />
-                        <Button label="" icon="pi pi-download" style={{ margin: '5px' }} onClick={handleDownloadPDF} className="p-button-success pdf-toolbar-button" />
-                        <Button label="" icon="pi pi-print" style={{ margin: '5px' }} onClick={handlePrint} className="p-button-success pdf-toolbar-button" />
-                    </div>
-                    <div style={{ overflow: 'auto', height: '59vh', display: 'flex', paddingTop: '10%', justifyContent: 'center', alignItems: 'center' }}>
-                        <div className="pdf-canvas" style={{ background: 'lightgray', marginTop: '640px', padding: '10px' }}>
-                            <div className="pdf-frame" style={{ border: 'none', padding: '0px', maxWidth: '100%', maxHeight: '100%' }}>
-                                <Document file={pdfUrl}>
-                                    <Page pageNumber={currentPage} width={pageWidth} height={pageHeight} scale={scale} />
-                                </Document>
-                            </div>
-                        </div>
-                    </div>
-                    <div
-                        className="pdf-page-info"
-                        style={{
-                            textAlign: 'center',
-                            marginTop: '10px',
-                            color: 'gray',
-                            fontSize: '12px'
-                        }}
-                    >
-                        Page {currentPage} of {numPages}
-                    </div>
+                        <Page 
+                            pageNumber={currentPage} 
+                            width={pageWidth} 
+                            scale={scale}
+                            renderAnnotationLayer={true}
+                            renderTextLayer={true}
+                        />
+                    </Document>
                 </div>
-            )}
+            </div>
         </div>
     );
 }
