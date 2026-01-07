@@ -119,7 +119,7 @@ const Dashboard = () => {
                             Selamat Datang di <br/> SIAKAD Digital
                         </h2>
                         <p className="text-700 m-0 uppercase text-sm max-w-30rem">
-                            Portal Akademik Terpadu SMK Negeri 1 Kota - Pantau nilai dan kehadiran lebih mudah.
+                            Portal Akademik Terpadu  - Pantau nilai dan kehadiran lebih mudah.
                         </p>
                     </div>
                     <div className="p-3 flex flex-wrap gap-2">
