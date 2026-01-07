@@ -1,184 +1,222 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
-import { Chart } from 'primereact/chart';
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
+
+import React, { useEffect, useState } from 'react';
 import { Button } from 'primereact/button';
-import React, { useContext, useEffect, useState } from 'react';
-import { LayoutContext } from '../../layout/context/layoutcontext';
-import { ChartData, ChartOptions } from 'chart.js';
+import { DataView } from 'primereact/dataview';
+import { Tag } from 'primereact/tag';
+import { ProgressSpinner } from 'primereact/progressspinner';
+import { Dialog } from 'primereact/dialog';
+import { SplitButton } from 'primereact/splitbutton';
+import { Carousel } from 'primereact/carousel';
 import { useRouter } from 'next/navigation';
 
+// --- INTERFACE DATA ---
+interface InfoSekolah {
+    ID: number;
+    TANGGAL: string;
+    KATEGORI: string;
+    JUDUL: string;
+    DESKRIPSI: string;
+}
+
+interface Prestasi {
+    status: string;
+    nama: string;
+    tahun: string;
+    icon: string;
+    color: string;
+}
+
 const Dashboard = () => {
-    const [lineOptions, setLineOptions] = useState<ChartOptions>({});
-    const { layoutConfig } = useContext(LayoutContext);
+    const [informasi, setInformasi] = useState<InfoSekolah[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedDetail, setSelectedDetail] = useState<InfoSekolah | null>(null);
     const router = useRouter();
 
-    // Data Grafik Presensi (First: Kehadiran, Second: Izin/Sakit)
-    const attendanceData: ChartData = {
-        labels: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'],
-        datasets: [
-            {
-                label: 'Siswa Hadir',
-                data: [98, 95, 99, 92, 85, 90],
-                fill: false,
-                backgroundColor: '#2f4860',
-                borderColor: '#2f4860',
-                tension: 0.4
-            },
-            {
-                label: 'Izin/Sakit',
-                data: [2, 5, 1, 8, 15, 10],
-                fill: false,
-                backgroundColor: '#00bb7e',
-                borderColor: '#00bb7e',
-                tension: 0.4
-            }
-        ]
-    };
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-    const applyTheme = (isDark: boolean) => {
-        const textColor = isDark ? '#ebedef' : '#495057';
-        const gridColor = isDark ? 'rgba(160, 167, 181, .3)' : '#ebedef';
+    const prestasiSekolah: Prestasi[] = [
+        { status: 'JUARA 1', nama: 'INOVASI TEKNOLOGI', tahun: '2024', icon: 'pi-trophy', color: 'text-yellow-500' },
+        { status: 'AKREDITASI A+', nama: 'UNGGUL NASIONAL', tahun: '2025', icon: 'pi-verified', color: 'text-blue-700' },
+        { status: 'JUARA UMUM', nama: 'OLIMPIADE SAINS', tahun: '2024', icon: 'pi-star-fill', color: 'text-orange-500' },
+    ];
 
-        const options: ChartOptions = {
-            plugins: { legend: { labels: { color: textColor } } },
-            scales: {
-                x: { ticks: { color: textColor }, grid: { color: gridColor } },
-                y: { ticks: { color: textColor }, grid: { color: gridColor } }
-            }
-        };
-        setLineOptions(options);
-    };
+    const registerItems = [
+        { label: 'Siswa', icon: 'pi pi-user', command: () => router.push('/auth/register/siswa') },
+        { label: 'Guru', icon: 'pi pi-briefcase', command: () => router.push('/auth/register/guru') }
+    ];
 
     useEffect(() => {
-        applyTheme(layoutConfig.colorScheme === 'dark');
-    }, [layoutConfig.colorScheme]);
+        fetchInformasi();
+    }, []);
+
+    const fetchInformasi = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_URL}/master-infosekolah`);
+            const json = await res.json();
+            setInformasi(json.data || []);
+        } catch (err) { 
+            console.error(err); 
+        } finally { 
+            setLoading(false); 
+        }
+    };
+
+    const prestasiTemplate = (data: Prestasi) => (
+        <div className="surface-card border-1 border-200 border-round-xl p-3 m-1 text-center shadow-1">
+            <i className={`pi ${data.icon} ${data.color} text-2xl mb-2`}></i>
+            <div className="text-sm text-900 mb-1 uppercase" style={{ fontWeight: 400 }}>{data.status}</div>
+            <div className="text-xs text-600 mb-2 uppercase" style={{ fontWeight: 400 }}>{data.nama}</div>
+            <Tag severity="info" value={data.tahun} className="text-xs px-2" style={{ fontWeight: 400 }}></Tag>
+        </div>
+    );
+
+    const infoItemTemplate = (item: InfoSekolah) => (
+        <div className="col-12 p-1" key={item.ID}>
+            <div className="flex align-items-center bg-white border-round-lg p-2 cursor-pointer hover:surface-100 transition-all border-1 border-100 shadow-sm" onClick={() => setSelectedDetail(item)}>
+                <div className="flex flex-column align-items-center justify-content-center border-right-1 border-200 pr-2 mr-3 text-center" style={{ width: '50px' }}>
+                    <span className="text-xl text-blue-800" style={{ fontWeight: 400 }}>{new Date(item.TANGGAL).getDate()}</span>
+                    <span className="text-xs uppercase text-500" style={{ fontWeight: 400 }}>{new Date(item.TANGGAL).toLocaleDateString("id-ID", { month: 'short' })}</span>
+                </div>
+                <div className="flex-grow-1 overflow-hidden">
+                    <h4 className="m-0 text-900 white-space-nowrap overflow-hidden text-overflow-ellipsis text-xs uppercase" style={{ fontWeight: 400 }}>{item.JUDUL}</h4>
+                    <span className="text-xs text-blue-600 tracking-tighter uppercase" style={{ fontWeight: 400 }}>{item.KATEGORI}</span>
+                </div>
+            </div>
+        </div>
+    );
 
     return (
-        <div className="grid">
-            {/* --- SEKSI HEADER / LANDING ACCESS --- */}
+        <div className="grid p-2" style={{ fontFamily: "'Poppins', sans-serif" }}>
+            <style jsx global>{`
+                @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+                body { 
+                    font-family: 'Poppins', sans-serif !important; 
+                    font-weight: 400;
+                }
+                /* Reset weight untuk elemen umum */
+                h1, h2, h3, h4, h5, h6, span, p, div, button {
+                    font-weight: 400;
+                }
+                /* Khusus class bold */
+                .font-bold-special {
+                    font-weight: 700 !important;
+                }
+            `}</style>
+
+            {/* --- SEKSI HEADER --- */}
             <div className="col-12">
-                <div className="card flex flex-column md:flex-row align-items-center justify-content-between" 
-                     style={{ borderRadius: '1rem', background: 'linear-gradient(90deg, rgba(33, 150, 243, 0.1) 0%, rgba(33, 150, 243, 0) 100%)' }}>
+                <div className="card flex flex-column md:flex-row align-items-center justify-content-between p-4 shadow-2" 
+                     style={{ 
+                        borderRadius: '1rem', 
+                        background: 'linear-gradient(90deg, #bbdefb 0%, #bbdefb 50%, #ffffff 100%)',
+                        border: '1px solid #90caf9'
+                     }}>
                     <div className="p-3">
-                        <h2 className="text-900 font-bold mb-2">Selamat Datang di SIAKAD Digital</h2>
-                        <p className="text-600 m-0">Portal Akademik Terpadu SMK Negeri 1 Kota - Pantau nilai dan kehadiran lebih mudah.</p>
+                        <h2 className="text-blue-900 mb-2 uppercase tracking-tighter font-bold-special" style={{ fontSize: '2.5rem', lineHeight: '1.1' }}>
+                            Selamat Datang di <br/> SIAKAD Digital
+                        </h2>
+                        <p className="text-700 m-0 uppercase text-sm max-w-30rem">
+                            Portal Akademik Terpadu SMK Negeri 1 Kota - Pantau nilai dan kehadiran lebih mudah.
+                        </p>
                     </div>
-                    <div className="p-3">
-                        <Button label="Login SISWA / GURU" icon="pi pi-sign-in" className="p-button-raised" 
+                    <div className="p-3 flex flex-wrap gap-2">
+                         <Button label="LOGIN SISWA / GURU" icon="pi pi-sign-in" 
+                                className="p-button-raised bg-blue-800 border-blue-800 px-4 py-3 border-round-lg shadow-4 font-bold-special" 
                                 onClick={() => router.push('/auth/login')} />
+                         <SplitButton label="DAFTAR" icon="pi pi-user-plus" model={registerItems} 
+                                className="p-button-outlined text-blue-800 border-round-lg font-bold-special" />
                     </div>
                 </div>
             </div>
 
-            {/* --- STATS CARDS --- */}
-            <div className="col-12 lg:col-6 xl:col-3">
-                <div className="card mb-0">
-                    <div className="flex justify-content-between mb-3">
-                        <div>
-                            <span className="block text-500 font-medium mb-3">Total Siswa</span>
-                            <div className="text-900 font-medium text-xl">1.250</div>
-                        </div>
-                        <div className="flex align-items-center justify-content-center bg-blue-100 border-round" style={{ width: '2.5rem', height: '2.5rem' }}>
-                            <i className="pi pi-users text-blue-500 text-xl" />
-                        </div>
+            {/* --- INFO CARDS (NORMAL WEIGHT) --- */}
+            <div className="col-12 lg:col-4">
+                <div className="card h-full border-none shadow-2 p-4">
+                    <div className="flex align-items-center mb-2">
+                        <i className="pi pi-compass text-blue-800 text-2xl mr-3"></i>
+                        <h6 className="m-0 text-900 uppercase text-xs tracking-widest">VISI UTAMA</h6>
                     </div>
-                    <span className="text-green-500 font-medium">Aktif </span>
-                    <span className="text-500">Tahun Ajaran 2024/2025</span>
-                </div>
-            </div>
-            <div className="col-12 lg:col-6 xl:col-3">
-                <div className="card mb-0">
-                    <div className="flex justify-content-between mb-3">
-                        <div>
-                            <span className="block text-500 font-medium mb-3">Guru & Staf</span>
-                            <div className="text-900 font-medium text-xl">85</div>
-                        </div>
-                        <div className="flex align-items-center justify-content-center bg-orange-100 border-round" style={{ width: '2.5rem', height: '2.5rem' }}>
-                            <i className="pi pi-user-edit text-orange-500 text-xl" />
-                        </div>
-                    </div>
-                    <span className="text-green-500 font-medium">10 </span>
-                    <span className="text-500">Hadir Hari Ini</span>
-                </div>
-            </div>
-            <div className="col-12 lg:col-6 xl:col-3">
-                <div className="card mb-0">
-                    <div className="flex justify-content-between mb-3">
-                        <div>
-                            <span className="block text-500 font-medium mb-3">Mata Pelajaran</span>
-                            <div className="text-900 font-medium text-xl">42</div>
-                        </div>
-                        <div className="flex align-items-center justify-content-center bg-cyan-100 border-round" style={{ width: '2.5rem', height: '2.5rem' }}>
-                            <i className="pi pi-book text-cyan-500 text-xl" />
-                        </div>
-                    </div>
-                    <span className="text-green-500 font-medium">12 </span>
-                    <span className="text-500">Ujian Berlangsung</span>
-                </div>
-            </div>
-            <div className="col-12 lg:col-6 xl:col-3">
-                <div className="card mb-0">
-                    <div className="flex justify-content-between mb-3">
-                        <div>
-                            <span className="block text-500 font-medium mb-3">Pengumuman</span>
-                            <div className="text-900 font-medium text-xl">3 Baru</div>
-                        </div>
-                        <div className="flex align-items-center justify-content-center bg-purple-100 border-round" style={{ width: '2.5rem', height: '2.5rem' }}>
-                            <i className="pi pi-megaphone text-purple-500 text-xl" />
-                        </div>
-                    </div>
-                    <span className="text-green-500 font-medium">Cek </span>
-                    <span className="text-500">Informasi terbaru</span>
-                </div>
-            </div>
-
-            {/* --- CHARTS & TABLES --- */}
-            <div className="col-12 lg:col-8">
-                <div className="card">
-                    <h5>Statistik Kehadiran Siswa (Minggu Ini)</h5>
-                    <Chart type="line" data={attendanceData} options={lineOptions} />
+                    <p className="line-height-3 text-700 m-0 text-xs uppercase">Mencetak karakter unggul dan siap bersaing global.</p>
                 </div>
             </div>
 
             <div className="col-12 lg:col-4">
-                <div className="card">
-                    <h5>Agenda Sekolah</h5>
-                    <ul className="list-none p-0 m-0">
-                        <li className="flex flex-column md:flex-row md:align-items-center md:justify-content-between mb-4">
-                            <div>
-                                <span className="text-900 font-medium mr-2 mb-1 md:mb-0">Ujian Tengah Semester</span>
-                                <div className="mt-1 text-600">Mulai: 25 Okt 2024</div>
-                            </div>
-                            <div className="mt-2 md:mt-0 flex align-items-center">
-                                <i className="pi pi-calendar text-blue-500 mr-2"></i>
-                            </div>
-                        </li>
-                        <li className="flex flex-column md:flex-row md:align-items-center md:justify-content-between mb-4">
-                            <div>
-                                <span className="text-900 font-medium mr-2 mb-1 md:mb-0">Rapat Pleno Komite</span>
-                                <div className="mt-1 text-600">Mulai: 30 Okt 2024</div>
-                            </div>
-                            <div className="mt-2 md:mt-0 flex align-items-center">
-                                <i className="pi pi-calendar text-orange-500 mr-2"></i>
-                            </div>
-                        </li>
-                    </ul>
+                <div className="card h-full border-none shadow-2 p-4">
+                    <div className="flex align-items-center mb-2">
+                        <i className="pi pi-verified text-green-700 text-2xl mr-3"></i>
+                        <h6 className="m-0 text-900 uppercase text-xs tracking-widest">AKREDITASI</h6>
+                    </div>
+                    <div className="p-2 border-round-lg bg-blue-50 border-left-3 border-blue-800">
+                        <span className="text-sm text-blue-900 block uppercase">PERINGKAT A+ UNGGUL</span>
+                    </div>
                 </div>
             </div>
 
-            <div className="col-12">
-                <div className="card">
-                    <h5>Daftar Kelas & Wali Kelas</h5>
-                    <DataTable value={[]} emptyMessage="Data kelas tidak ditemukan.">
-                        <Column field="kelas" header="Kelas" />
-                        <Column field="wali" header="Wali Kelas" />
-                        <Column field="jumlahSiswa" header="Jumlah Siswa" />
-                        <Column field="status" header="Status" />
-                    </DataTable>
+            <div className="col-12 lg:col-4">
+                <div className="card h-full border-none shadow-2 p-4">
+                    <div className="flex align-items-center mb-2">
+                        <i className="pi pi-clock text-orange-700 text-2xl mr-3"></i>
+                        <h6 className="m-0 text-900 uppercase text-xs tracking-widest">LAYANAN</h6>
+                    </div>
+                    <p className="text-700 m-0 text-xs uppercase tracking-tighter">SENIN - JUMAT (07:30 - 15:30 WIB)</p>
                 </div>
             </div>
+
+            {/* --- COMPACT PRESTASI --- */}
+            <div className="col-12 lg:col-7">
+                <div className="card shadow-2 border-none p-4">
+                    <div className="flex justify-content-between align-items-center mb-4">
+                        <h6 className="m-0 text-blue-900 uppercase text-sm tracking-widest">GALERI PRESTASI</h6>
+                        <i className="pi pi-trophy text-yellow-500 text-3xl"></i>
+                    </div>
+                    <Carousel 
+                        value={prestasiSekolah} 
+                        numVisible={3} 
+                        numScroll={1} 
+                        circular 
+                        autoplayInterval={4000} 
+                        itemTemplate={prestasiTemplate} 
+                        responsiveOptions={[
+                            { breakpoint: '1024px', numVisible: 2, numScroll: 1 },
+                            { breakpoint: '768px', numVisible: 1, numScroll: 1 }
+                        ]}
+                    />
+                </div>
+            </div>
+
+            {/* --- COMPACT MADING --- */}
+            <div className="col-12 lg:col-5">
+                <div className="card shadow-2 h-full p-4">
+                    <h6 className="m-0 text-blue-900 uppercase text-sm tracking-widest mb-4">MADING DIGITAL</h6>
+                    {loading ? (
+                        <div className="flex justify-content-center py-4"><ProgressSpinner style={{width: '20px', height: '20px'}} /></div>
+                    ) : (
+                        <div className="overflow-auto" style={{ maxHeight: '280px' }}>
+                            <DataView value={informasi.slice(0, 4)} itemTemplate={infoItemTemplate} />
+                        </div>
+                    )}
+                    <Button label="LIHAT SEMUA INFORMASI" icon="pi pi-arrow-right" iconPos="right" className="p-button-text w-full mt-3 p-button-sm text-xs uppercase" onClick={() => router.push('/informasi')} />
+                </div>
+            </div>
+
+            {/* --- DETAIL DIALOG --- */}
+            <Dialog visible={!!selectedDetail} onHide={() => setSelectedDetail(null)} style={{ width: '90vw', maxWidth: '480px' }} modal dismissableMask showHeader={false} contentStyle={{ padding: '0', borderRadius: '20px' }}>
+                {selectedDetail && (
+                    <div className="p-5">
+                        <div className="flex justify-content-between mb-4">
+                            <Tag value={selectedDetail.KATEGORI} severity="info" className="px-3" />
+                            <Button icon="pi pi-times" rounded text onClick={() => setSelectedDetail(null)} />
+                        </div>
+                        <h2 className="text-900 text-xl mt-0 uppercase mb-4 line-height-2 font-bold-special">{selectedDetail.JUDUL}</h2>
+                        <div className="surface-100 p-4 border-round-xl text-800 text-sm line-height-4">
+                            {selectedDetail.DESKRIPSI}
+                        </div>
+                    </div>
+                )}
+            </Dialog>
         </div>
     );
 };
