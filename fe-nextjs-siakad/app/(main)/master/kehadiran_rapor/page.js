@@ -275,7 +275,7 @@ export default function EntryKehadiranPage() {
             <DataTable value={students} showGridlines stripedRows paginator rows={10}>
               <Column header="No." body={(r, o) => o.rowIndex + 1} style={{ width: "50px" }} />
               <Column field="NIS" header="NIS" style={{ width: "120px" }} />
-              <Column field="NAMA_SISWA" header="Nama Siswa" />
+              <Column field="NAMA" header="Nama Siswa" />
               <Column header="Sakit" body={(r) => inputTemplate(r, "SAKIT")} style={{ width: "100px" }} />
               <Column header="Izin" body={(r) => inputTemplate(r, "IZIN")} style={{ width: "100px" }} />
               <Column header="Alpa" body={(r) => inputTemplate(r, "ALPA")} style={{ width: "100px" }} />
