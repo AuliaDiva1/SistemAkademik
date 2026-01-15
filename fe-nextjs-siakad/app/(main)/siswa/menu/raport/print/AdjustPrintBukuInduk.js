@@ -128,7 +128,7 @@ export default function AdjustPrintBukuInduk({ visible, onHide, dataRaport }) {
                                         <div style={{ fontSize: '18pt', fontWeight: 'bold', marginTop: '5px', marginBottom: '5px' }}>SMA NEGERI 1 MADIUN</div>
                                         <div style={{ fontSize: '9pt', marginTop: '5px' }}>
                                             Jl. Pendidikan No. 123, Madiun 63137<br/>
-                                            Telp. (0351) 123456 | Email: sman1madiun@gmail.com
+                                            Telp. (0351) 123456 | Email: sman1madiun@example.com
                                         </div>
                                     </td>
                                     <td style={{ width: '15%' }}></td>
@@ -326,7 +326,7 @@ export default function AdjustPrintBukuInduk({ visible, onHide, dataRaport }) {
                                         <div style={{ fontSize: '18pt', fontWeight: 'bold', marginTop: '5px', marginBottom: '5px' }}>SMA NEGERI 1 MADIUN</div>
                                         <div style={{ fontSize: '9pt', marginTop: '5px' }}>
                                             Jl. Pendidikan No. 123, Madiun 63137<br/>
-                                            Telp. (0351) 123456 | Email: sman1madiun@gmail.com
+                                            Telp. (0351) 123456 | Email: sman1madiun@example.com
                                         </div>
                                     </td>
                                     <td style={{ width: '15%' }}></td>
@@ -390,55 +390,29 @@ export default function AdjustPrintBukuInduk({ visible, onHide, dataRaport }) {
                                     <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', fontSize: '9pt' }}>K</th>
                                 </tr>
                             </thead>
-                          <tbody>
-                               <tbody>
-                                        {Object.entries(nilaiRaport)
-                                            .filter(([kategori]) => {
-                                                const kelasSiswa = biodata?.KELAS?.toUpperCase() || ""; 
-                                                const kategoriUpper = kategori.toUpperCase();
-                                    
-                                                // Identifikasi apakah siswa ini IPA atau IPS
-                                                const isSiswaIPA = kelasSiswa.includes("IPA") || kelasSiswa.includes("MIPA");
-                                                const isSiswaIPS = kelasSiswa.includes("IPS") || kelasSiswa.includes("IIS") || kelasSiswa.includes("SOSIAL");
-                                    
-                                                // --- FILTER LOGIC ---
-                                                
-                                                // A. Kalau kategori punya kata IPA/MIPA tapi siswanya IPS -> SEMBUNYIKAN
-                                                if ((kategoriUpper.includes("IPA") || kategoriUpper.includes("MIPA")) && isSiswaIPS) {
-                                                    return false;
-                                                }
-                                    
-                                                // B. Kalau kategori punya kata IPS/IIS/SOSIAL tapi siswanya IPA -> SEMBUNYIKAN
-                                                if ((kategoriUpper.includes("IPS") || kategoriUpper.includes("IIS") || kategoriUpper.includes("SOSIAL")) && isSiswaIPA) {
-                                                    return false;
-                                                }
-                                    
-                                                // C. Selain itu (Wajib A, Wajib B, atau kategori yang cocok dengan jurusan), TAMPILKAN
-                                                return true;
-                                            })
-                                            .map(([kategori, mapels]) => (
-                                                // ... (Bagian <React.Fragment> sampai bawah tetap sama seperti kode Anda)
-                                                <React.Fragment key={kategori}>
-                                                    <tr style={{ backgroundColor: '#f5f5f5' }}>
-                                                        <td colSpan="5" style={{ border: '1px solid #000', padding: '6px', fontWeight: 'bold' }}>
-                                                            {kategori}
-                                                        </td>
-                                                    </tr>
-                                                    {mapels.map((m, idx) => (
-                                                        <tr key={idx}>
-                                                            <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{idx + 1}</td>
-                                                            <td style={{ border: '1px solid #000', padding: '6px' }}>{m.NAMA_MAPEL}</td>
-                                                            <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', fontWeight: 'bold' }}>{m.NILAI_P || '-'}</td>
-                                                            <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', fontWeight: 'bold' }}>{m.NILAI_K || '-'}</td>
-                                                            <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'justify', fontSize: '9pt', lineHeight: '1.3' }}>
-                                                                {m.DESKRIPSI_P || `Menunjukkan pemahaman yang baik dalam ${m.NAMA_MAPEL}.`}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </React.Fragment>
-                                            ))}
-                                    </tbody>
-                                                    </table>
+                            <tbody>
+                                {Object.entries(nilaiRaport).map(([kategori, mapels]) => (
+                                    <React.Fragment key={kategori}>
+                                        <tr style={{ backgroundColor: '#f5f5f5' }}>
+                                            <td colSpan="5" style={{ border: '1px solid #000', padding: '6px', fontWeight: 'bold' }}>
+                                                {kategori}
+                                            </td>
+                                        </tr>
+                                        {mapels.map((m, idx) => (
+                                            <tr key={idx}>
+                                                <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{idx + 1}</td>
+                                                <td style={{ border: '1px solid #000', padding: '6px' }}>{m.NAMA_MAPEL}</td>
+                                                <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', fontWeight: 'bold' }}>{m.NILAI_P || '-'}</td>
+                                                <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', fontWeight: 'bold' }}>{m.NILAI_K || '-'}</td>
+                                                <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'justify', fontSize: '9pt', lineHeight: '1.3' }}>
+                                                    {m.DESKRIPSI_P || `Menunjukkan pemahaman yang baik dalam ${m.NAMA_MAPEL}.`}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </React.Fragment>
+                                ))}
+                            </tbody>
+                        </table>
 
                         <div style={{ fontSize: '9pt', fontStyle: 'italic', marginTop: '8px' }}>
                             <em>Keterangan: P = Pengetahuan | K = Keterampilan</em>
