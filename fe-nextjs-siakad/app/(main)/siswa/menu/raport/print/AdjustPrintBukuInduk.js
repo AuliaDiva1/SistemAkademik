@@ -390,29 +390,50 @@ export default function AdjustPrintBukuInduk({ visible, onHide, dataRaport }) {
                                     <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', fontSize: '9pt' }}>K</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                {Object.entries(nilaiRaport).map(([kategori, mapels]) => (
-                                    <React.Fragment key={kategori}>
-                                        <tr style={{ backgroundColor: '#f5f5f5' }}>
-                                            <td colSpan="5" style={{ border: '1px solid #000', padding: '6px', fontWeight: 'bold' }}>
-                                                {kategori}
-                                            </td>
-                                        </tr>
-                                        {mapels.map((m, idx) => (
-                                            <tr key={idx}>
-                                                <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{idx + 1}</td>
-                                                <td style={{ border: '1px solid #000', padding: '6px' }}>{m.NAMA_MAPEL}</td>
-                                                <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', fontWeight: 'bold' }}>{m.NILAI_P || '-'}</td>
-                                                <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', fontWeight: 'bold' }}>{m.NILAI_K || '-'}</td>
-                                                <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'justify', fontSize: '9pt', lineHeight: '1.3' }}>
-                                                    {m.DESKRIPSI_P || `Menunjukkan pemahaman yang baik dalam ${m.NAMA_MAPEL}.`}
+                          <tbody>
+                                {Object.entries(nilaiRaport)
+                                    .filter(([kategori]) => {
+                                        // Ambil nama jurusan dari data biodata siswa
+                                        const jurusanSiswa = biodata?.NAMA_JURUSAN || ""; 
+                                        const kategoriUpper = kategori.toUpperCase();
+                            
+                                        // 1. Jika kategori mengandung kata MIPA atau IPA
+                                        if (kategoriUpper.includes("MIPA") || kategoriUpper.includes("IPA")) {
+                                            // Hanya tampilkan jika siswa berasal dari jurusan IPA (mengandung kata 'Alam')
+                                            return jurusanSiswa.toLowerCase().includes("alam");
+                                        }
+                            
+                                        // 2. Jika kategori mengandung kata IPS, SOSIAL, atau IIS
+                                        if (kategoriUpper.includes("IPS") || kategoriUpper.includes("SOSIAL") || kategoriUpper.includes("IIS")) {
+                                            // Hanya tampilkan jika siswa berasal dari jurusan IPS (mengandung kata 'Sosial')
+                                            return jurusanSiswa.toLowerCase().includes("sosial");
+                                        }
+                            
+                                        // 3. Untuk kategori lainnya (Umum/Wajib), tampilkan semua
+                                        return true;
+                                    })
+                                    .map(([kategori, mapels]) => (
+                                        <React.Fragment key={kategori}>
+                                            <tr style={{ backgroundColor: '#f5f5f5' }}>
+                                                <td colSpan="5" style={{ border: '1px solid #000', padding: '6px', fontWeight: 'bold' }}>
+                                                    {kategori}
                                                 </td>
                                             </tr>
-                                        ))}
-                                    </React.Fragment>
-                                ))}
+                                            {mapels.map((m, idx) => (
+                                                <tr key={idx}>
+                                                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{idx + 1}</td>
+                                                    <td style={{ border: '1px solid #000', padding: '6px' }}>{m.NAMA_MAPEL}</td>
+                                                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', fontWeight: 'bold' }}>{m.NILAI_P || '-'}</td>
+                                                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', fontWeight: 'bold' }}>{m.NILAI_K || '-'}</td>
+                                                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'justify', fontSize: '9pt', lineHeight: '1.3' }}>
+                                                        {m.DESKRIPSI_P || `Menunjukkan pemahaman yang baik dalam ${m.NAMA_MAPEL}.`}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </React.Fragment>
+                                    ))}
                             </tbody>
-                        </table>
+                                                    </table>
 
                         <div style={{ fontSize: '9pt', fontStyle: 'italic', marginTop: '8px' }}>
                             <em>Keterangan: P = Pengetahuan | K = Keterampilan</em>
